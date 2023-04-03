@@ -63,6 +63,7 @@ export default function ProductEditScreen() {
   const [countInStock, setCountInStock] = useState('');
   const [brand, setBrand] = useState('');
   const [description, setDescription] = useState('');
+  const [newCategory, setNewCategory] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -153,6 +154,16 @@ export default function ProductEditScreen() {
     setImages(images.filter((x) => x !== fileName));
     toast.success('Image removed successfully. click Update to apply it');
   };
+
+  const categories = [
+    'Electronics',
+    'Books',
+    'Clothing',
+    'Home & Kitchen',
+    'Sports & Outdoors',
+    'Toys & Games',
+  ];
+
   return (
     <Container className="small-container">
       <Helmet>
@@ -200,12 +211,32 @@ export default function ProductEditScreen() {
           </Form.Group>
           <Form.Group className="mb-3" controlId="category">
             <Form.Label>Category</Form.Label>
-            <Form.Control
+            <Form.Select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               required
-            />
+            >
+              <option value="">Select Category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+              <option value="other">Other</option>
+            </Form.Select>
           </Form.Group>
+          {category === 'other' && (
+            <Form.Group className="mb-3" controlId="newCategory">
+              <Form.Label>New Category</Form.Label>
+              <Form.Control
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="Enter new category"
+                required
+              />
+            </Form.Group>
+          )}
+
           <Form.Group className="mb-3" controlId="brand">
             <Form.Label>Brand</Form.Label>
             <Form.Control
