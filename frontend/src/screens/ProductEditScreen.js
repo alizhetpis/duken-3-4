@@ -11,6 +11,7 @@ import { Helmet } from 'react-helmet-async';
 import LoadingBox from '../components/LoadingBox';
 import MessageBox from '../components/MessageBox';
 import Button from 'react-bootstrap/Button';
+import { getCategories, createCategory } from '../services/categoryService';
 
 const reducer = (state, action) => {
   switch (action.type) {
@@ -63,6 +64,7 @@ export default function ProductEditScreen() {
   const [countInStock, setCountInStock] = useState('');
   const [brand, setBrand] = useState('');
   const [description, setDescription] = useState('');
+  const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
 
   useEffect(() => {
@@ -89,6 +91,19 @@ export default function ProductEditScreen() {
     };
     fetchData();
   }, [productId]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await getCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -117,6 +132,10 @@ export default function ProductEditScreen() {
       });
       toast.success('Product updated successfully');
       navigate('/admin/products');
+      if (category === 'other') {
+        const newCat = await createCategory(newCategory, userInfo.token);
+        setCategory(newCat.name);
+      }
     } catch (err) {
       toast.error(getError(err));
       dispatch({ type: 'UPDATE_FAIL' });
@@ -155,7 +174,7 @@ export default function ProductEditScreen() {
     toast.success('Image removed successfully. click Update to apply it');
   };
 
-  const categories = [
+  const categoryOptions = [
     'Electronics',
     'Books',
     'Clothing',
@@ -217,7 +236,7 @@ export default function ProductEditScreen() {
               required
             >
               <option value="">Select Category</option>
-              {categories.map((cat) => (
+              {categoryOptions.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
