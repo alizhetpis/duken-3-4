@@ -1,17 +1,15 @@
-import axios from 'axios';
 import React, { useContext, useEffect, useReducer, useState } from 'react';
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
-import Container from 'react-bootstrap/Container';
-import Table from 'react-bootstrap/Table';
-import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Button, Container, Form, Table } from 'react-bootstrap';
+import { Helmet } from 'react-helmet-async';
 import { toast } from 'react-toastify';
 import LoadingBox from '../components/LoadingBox';
 import MessageBox from '../components/MessageBox';
 import { Store } from '../Store';
 import { getError } from '../utils';
 
+// Reducer для управления состоянием страницы
 const reducer = (state, action) => {
   switch (action.type) {
     case 'FETCH_REQUEST':
@@ -20,36 +18,13 @@ const reducer = (state, action) => {
       return { ...state, loading: false, categories: action.payload };
     case 'FETCH_FAIL':
       return { ...state, loading: false, error: action.payload };
-    case 'CREATE_REQUEST':
-      return { ...state, loadingCreate: true };
-    case 'CREATE_SUCCESS':
-      return { ...state, loadingCreate: false };
-    case 'CREATE_FAIL':
-      return { ...state, loadingCreate: false };
-    case 'DELETE_REQUEST':
-      return { ...state, loadingDelete: true };
-    case 'DELETE_SUCCESS':
-      return { ...state, loadingDelete: false };
-    case 'DELETE_FAIL':
-      return { ...state, loadingDelete: false };
     default:
       return state;
   }
 };
 
 function Categories() {
-  const [
-    {
-      loading,
-      error,
-      categories,
-      loadingCreate,
-      loadingDelete,
-      errorCreate,
-      errorDelete,
-    },
-    dispatch,
-  ] = useReducer(reducer, {
+  const [{ loading, error, categories }, dispatch] = useReducer(reducer, {
     loading: true,
     categories: [],
     error: '',
@@ -60,6 +35,7 @@ function Categories() {
 
   const navigate = useNavigate();
   const [name, setName] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,69 +61,78 @@ function Categories() {
   const submitHandler = async (e) => {
     e.preventDefault();
     try {
-      dispatch({ type: 'CREATE_REQUEST' });
-      await axios.post(
-        '/api/categories',
-        { name },
-        {
-          headers: { Authorization: `Bearer ${userInfo.token}` },
-        }
-      );
-      dispatch({
-        type: 'CREATE_SUCCESS',
-      });
-      toast.success('Category created successfully');
-      navigate('/admin/categories');
+      if (selectedCategory) {
+        const { data } = await axios.put(
+          `/api/categories/${selectedCategory._id}`,
+          { name },
+          {
+            headers: { Authorization: `Bearer ${userInfo.token}` },
+          }
+        );
+        toast.success('Category updated successfully');
+        setSelectedCategory(null);
+        setName('');
+        dispatch({
+          type: 'FETCH_SUCCESS',
+          payload: categories.map((x) => (x._id === data._id ? data : x)),
+        });
+      } else {
+        const { data } = await axios.post(
+          '/api/categories',
+          { name },
+          {
+            headers: { Authorization: `Bearer ${userInfo.token}` },
+          }
+        );
+        toast.success('Category created successfully');
+        setName('');
+        dispatch({ type: 'FETCH_SUCCESS', payload: [...categories, data] });
+      }
     } catch (error) {
       toast.error(getError(error));
-      dispatch({ type: 'CREATE_FAIL' });
     }
   };
 
   const editHandler = (category) => {
-    // TODO: Implement edit category functionality
+    setSelectedCategory(category);
+    setName(category.name);
   };
 
-  const createHandler = () => {
-    // TODO: Implement create category functionality
+  const cancelEditHandler = () => {
+    setSelectedCategory(null);
+    setName('');
   };
 
   const deleteHandler = async (category) => {
     if (window.confirm(`Are you sure to delete ${category.name}?`)) {
       try {
-        dispatch({ type: 'DELETE_REQUEST' });
         await axios.delete(`/api/categories/${category._id}`, {
           headers: { Authorization: `Bearer ${userInfo.token}` },
         });
-        dispatch({
-          type: 'DELETE_SUCCESS',
-        });
         toast.success('Category deleted successfully');
-        navigate('/admin/categories');
+        dispatch({
+          type: 'FETCH_SUCCESS',
+          payload: categories.filter((x) => x._id !== category._id),
+        });
       } catch (error) {
         toast.error(getError(error));
-        dispatch({ type: 'DELETE_FAIL' });
       }
     }
   };
 
   return (
-    <Container className="small-container">
+    <div>
       <Helmet>
         <title>Categories</title>
       </Helmet>
       <h1>Categories</h1>
-      {loadingDelete && <LoadingBox></LoadingBox>}
-      {errorDelete && <MessageBox variant="danger">{errorDelete}</MessageBox>}
-      {loadingCreate && <LoadingBox></LoadingBox>}
-      {errorCreate && <MessageBox variant="danger">{errorCreate}</MessageBox>}
       {loading ? (
         <LoadingBox></LoadingBox>
       ) : error ? (
         <MessageBox variant="danger">{error}</MessageBox>
       ) : (
         <>
-          <Table striped bordered hover responsive className="table-sm">
+          <table className="table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -162,30 +147,59 @@ function Categories() {
                   <td>{category.name}</td>
                   <td>
                     <Button
+                      type="button"
                       variant="light"
-                      className="btn-sm"
                       onClick={() => editHandler(category)}
                     >
-                      <i className="fas fa-edit"></i>
-                    </Button>{' '}
+                      Edit
+                    </Button>
+                    &nbsp;
                     <Button
-                      variant="danger"
-                      className="btn-sm"
+                      type="button"
+                      variant="light"
                       onClick={() => deleteHandler(category)}
                     >
-                      <i className="fas fa-trash"></i>
+                      Delete
                     </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </Table>
-          <Button className="my-3" onClick={createHandler}>
-            Create Category
-          </Button>
+          </table>
+          <Form onSubmit={submitHandler} className="d-flex align-items-center">
+            <Form.Control
+              type="text"
+              placeholder="Category Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mr-2"
+              style={{ width: '400px', marginRight: '1rem' }}
+            />
+            {selectedCategory ? (
+              <>
+                <Button type="button" className="mr-2" onClick={submitHandler}>
+                  Update Category
+                </Button>
+                <Button
+                  type="button"
+                  variant="light"
+                  onClick={cancelEditHandler}
+                  className="mr-2"
+                  style={{ marginLeft: '10px' }}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button type="button" onClick={submitHandler} variant="primary">
+                Create Category
+              </Button>
+            )}
+          </Form>
         </>
       )}
-    </Container>
+    </div>
   );
 }
+
 export default Categories;
