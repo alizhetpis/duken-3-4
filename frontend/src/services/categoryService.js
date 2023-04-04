@@ -2,20 +2,26 @@
 
 import axios from 'axios';
 
-const getCategories = async () => {
-  const { data } = await axios.get('/api/categories');
-  return data;
+export const getCategories = async () => {
+  try {
+    const { data } = await axios.get('/api/categories');
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-const createCategory = async (name, token) => {
-  const { data } = await axios.post(
-    '/api/categories',
-    { name },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  return data;
+export const createCategory = async (category, token) => {
+  try {
+    const { data } = await axios.post(
+      '/api/categories',
+      { name: category },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };
-
-export { getCategories, createCategory };
