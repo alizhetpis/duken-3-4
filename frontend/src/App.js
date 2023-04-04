@@ -36,6 +36,7 @@ import UserEditScreen from './screens/UserEditScreen';
 import MapScreen from './screens/MapScreen';
 import ForgetPasswordScreen from './screens/ForgetPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
+import Categories from './screens/Categories';
 
 function App() {
   const { state, dispatch: ctxDispatch } = useContext(Store);
@@ -137,6 +138,9 @@ function App() {
                       <LinkContainer to="/admin/users">
                         <NavDropdown.Item>Users</NavDropdown.Item>
                       </LinkContainer>
+                      <LinkContainer to="/admin/categories">
+                        <NavDropdown.Item>Categories</NavDropdown.Item>
+                      </LinkContainer>
                     </NavDropdown>
                   )}
                 </Nav>
@@ -228,6 +232,14 @@ function App() {
                 element={
                   <AdminRoute>
                     <DashboardScreen />
+                  </AdminRoute>
+                }
+              ></Route>
+              <Route
+                path="/admin/categories"
+                element={
+                  <AdminRoute>
+                    <Categories />
                   </AdminRoute>
                 }
               ></Route>
